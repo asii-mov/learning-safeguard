@@ -50,8 +50,8 @@ def process_dataset(config):
     # Collect inputs where assistant response is unsafe
     blocked_inputs = []
     for example in train_dataset:
-        if example["assistant_label"] == "unsafe":  # Adjust field name as per dataset
-            blocked_inputs.append(example["input"])
+        if example["human_annotation_toxicity"]:  # True means unsafe
+            blocked_inputs.append(example["user_input"])
     
     # Save for training
     blocked_inputs_dir = "./data/blocked_inputs"
@@ -68,9 +68,7 @@ def train_improved_model(config):
     # Prepare training data
     dataset_manager = DatasetManager(config)
     train_data = [{"input": inp, "label": "unsafe"} for inp in blocked_inputs]
-    
-    # Add safe examples for balanced training
-    safe_inputs = [ex["input"] for ex in dataset_manager.dataset["train"] if ex["assistant_label"] == "safe"]
+    safe_inputs = [ex["user_input"] for ex in dataset_manager.dataset["train"] if not ex["human_annotation_toxicity"]]
     train_data += [{"input": inp, "label": "safe"} for inp in safe_inputs[:len(blocked_inputs)]]
     
     # Convert to dataset format (simplified; adjust tokenization as needed)

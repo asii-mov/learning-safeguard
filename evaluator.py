@@ -55,8 +55,8 @@ class Evaluator:
         
         # Evaluate
         for example in tqdm(eval_dataset, desc="Evaluating"):
-            input_text = example["input"]
-            true_label = example["assistant_label"] == "unsafe"  # True if unsafe
+            input_text = example["user_input"]
+            true_label = example["human_annotation_toxicity"]
             
             # Default model
             default_safe, default_reason = default_guard.check_content(input_text)
