@@ -1,3 +1,4 @@
+# run_experiment.sh
 #!/bin/bash
 # Script to run the Llama Guard Improvement Research Experiment
 
