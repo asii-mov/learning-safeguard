@@ -1,7 +1,7 @@
 # research_implementation.py
 import json
 import os
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
 from transformers import Trainer, TrainingArguments, AutoModelForSequenceClassification
 import torch
 from typing import Dict, Any
@@ -15,16 +15,33 @@ logger = logging.getLogger(__name__)
 class DatasetManager:
     def __init__(self, config):
         self.config = config
-        self.dataset = load_dataset(
-            config["dataset"]["path"],
-            config["dataset"]["config"],
-            split={
-                "train": f"train[:{int(config['experiment']['process_sample_size'])}]",
-                "test": "test",
-                "validation": "validation"
-            }
+        
+        # Load the dataset without specifying splits initially
+        dataset = load_dataset(
+            config["dataset"]["path"],  # e.g., "lmsys/toxic-chat"
+            config["dataset"]["config"]  # e.g., "toxicchat0124"
         )
-        os.makedirs(config["dataset"]["store_dir"], exist_ok=True)
+        
+        # Check available splits
+        available_splits = list(dataset.keys())
+        print(f"Available splits: {available_splits}")
+        
+        # If 'validation' is missing, create it from the 'train' split
+        if 'validation' not in available_splits:
+            # Split 'train' into new 'train' and 'validation' sets (e.g., 85% train, 15% validation)
+            train_test_split = dataset['train'].train_test_split(
+                test_size=0.15,  # Adjust this ratio as needed
+                seed=config.get("seed", 42)  # Use a seed for reproducibility
+            )
+            # Create a new DatasetDict with all splits
+            self.dataset = DatasetDict({
+                'train': train_test_split['train'],
+                'validation': train_test_split['test'],
+                'test': dataset['test']
+            })
+        else:
+            # If 'validation' exists, use the dataset as-is
+            self.dataset = dataset
 
 def process_dataset(config):
     dataset_manager = DatasetManager(config)
